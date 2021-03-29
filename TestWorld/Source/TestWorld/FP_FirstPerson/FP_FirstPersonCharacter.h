@@ -24,17 +24,17 @@ public:
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 protected:
-	void OnMouse1( const bool pressed );
+	void OnMouse1( bool pressed );
 	void OnMouse2();
-	void OnMouseWheelDown();
-	void OnMouseWheelUp();
+	void OnMouseWheel( bool wheel_down );
+	void OnRotateTarget( bool pressed );
 	void MoveForward(float Val);
 	void MoveRight(float Val);
 	void Turn(float Rate);
 	void LookUp(float Rate);
 
-	void UpdateTargetLocation() const;
 	FVector GetTargetLockLocation() const;
+	virtual void BeginPlay() override;
 	virtual void Tick( float DeltaTime ) override;
 
 	FHitResult WeaponTrace(const FVector& StartTrace, const FVector& EndTrace) const;
@@ -53,7 +53,11 @@ public:
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
 	float TraceDistance;
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
-	float ScrollSpeed;
+	float ZoomSpeed;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
+	float ObjectRotateSpeedYaw;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
+	float ObjectRotateSpeedPitch;
 
 private:
 	UPROPERTY( VisibleDefaultsOnly, Category = Mesh )
@@ -65,6 +69,9 @@ private:
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = ( AllowPrivateAccess = "true" ) )
 	UCameraComponent* FirstPersonCameraComponent;
 
+	UPROPERTY()
+	APlayerController* player_controller;
+
 	// Target (phys gun object) variables
 	UPROPERTY()
 	AActor* target_cmp;
@@ -72,5 +79,6 @@ private:
 	FVector target_location_offset;
 	FRotator target_rotation_offset;
 	float target_distance;
+	bool rotating_target;
 };
 
