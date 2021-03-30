@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include <bitset>
 #include "FP_FirstPersonCharacter.generated.h"
 
 class UInputComponent;
@@ -24,11 +25,15 @@ public:
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 protected:
-	void OnMouse1( bool pressed );
+	void OnMouse1( bool Pressed );
 	void OnMouse2();
-	void OnMouseWheel( bool wheel_down );
-	void OnRotateTarget( bool pressed );
-	void MoveForward(float Val);
+	void OnMouseWheel( bool WheelDown );
+	void OnRotateTarget( bool Pressed );
+	void OnSprint( bool Pressed );
+	void OnNoclip();
+	void OnJumped( bool Pressed );
+	void OnJumped( float Rate );
+	void MoveForward( float Val );
 	void MoveRight(float Val);
 	void Turn(float Rate);
 	void LookUp(float Rate);
@@ -39,9 +44,7 @@ protected:
 
 	FHitResult WeaponTrace(const FVector& StartTrace, const FVector& EndTrace) const;
 
-	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
-	// End of APawn interface
 
 public:
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
@@ -58,6 +61,10 @@ public:
 	float ObjectRotateSpeedYaw;
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
 	float ObjectRotateSpeedPitch;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
+	float SprintSpeedMultiplier;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
+	float NoclipHeightMultiplier;
 
 private:
 	UPROPERTY( VisibleDefaultsOnly, Category = Mesh )
@@ -70,15 +77,23 @@ private:
 	UCameraComponent* FirstPersonCameraComponent;
 
 	UPROPERTY()
-	APlayerController* player_controller;
+	APlayerController* PlayerController;
+
+	enum EFlags
+	{
+		Sprint,
+		RotatingTarget,
+		NumFlags
+	};
+
+	std::bitset< NumFlags > Flags;
 
 	// Target (phys gun object) variables
 	UPROPERTY()
-	AActor* target_cmp;
+	AActor* TargetActor;
 
-	FVector target_location_offset;
-	FRotator target_rotation_offset;
-	float target_distance;
-	bool rotating_target;
+	FVector TargetLocationOffset;
+	FRotator targetRotationOffset;
+	float TargetDistance;
 };
 
