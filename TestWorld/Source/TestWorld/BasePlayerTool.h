@@ -1,28 +1,44 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "FP_FirstPerson/FP_FirstPersonCharacter.h"
+#include "Components/PrimitiveComponent.h"
 #include "BasePlayerTool.generated.h"
 
+class AFP_FirstPersonCharacter;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class TESTWORLD_API UBasePlayerTool : public UActorComponent
+UCLASS( ClassGroup = ( Custom ), meta = ( BlueprintSpawnableComponent ) )
+class TESTWORLD_API UBasePlayerTool : public UPrimitiveComponent
 {
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UBasePlayerTool();
 
+	void SetPlayerRef( AFP_FirstPersonCharacter& Player );
+	void SetEnabled( bool Enabled );
+
+	UFUNCTION( BlueprintCallable )
+	virtual FString GetName() const PURE_VIRTUAL( UBasePlayerTool::GetName, return {}; );
+
+	virtual void OnEnabledChanged( bool Enabled ) { }
+	virtual void OnMouse1( bool Pressed ) { }
+	virtual void OnMouse2( bool Pressed ) { }
+	virtual void OnMouseWheel( bool WheelDown ) { }
+	virtual void OnRotateTarget( bool Pressed ) { }
+	virtual void Turn( float Rate ) { }
+	virtual void LookUp( float Rate ) { }
+
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
+	FHitResult WeaponTrace( const FVector& StartTrace, const FVector& EndTrace ) const;
 
 public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+protected:
+	UPROPERTY()
+	bool IsEnabled;
+
+	UPROPERTY()
+	AFP_FirstPersonCharacter* Player;
 };

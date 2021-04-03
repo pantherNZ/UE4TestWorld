@@ -10,13 +10,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "..//Utility.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-#define COLLISION_WEAPON		ECC_GameTraceChannel1
-
-DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
-
-//////////////////////////////////////////////////////////////////////////
-// AFP_FirstPersonCharacter
+#include "../PhysTool.h"
 
 AFP_FirstPersonCharacter::AFP_FirstPersonCharacter()
 {
@@ -24,49 +18,77 @@ AFP_FirstPersonCharacter::AFP_FirstPersonCharacter()
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-	TraceDistance = 1000.0f;
-	ZoomSpeed = 1.0f;
-	ObjectRotateSpeedYaw = 0.1f;
-	ObjectRotateSpeedPitch = 0.1f;
 	SprintSpeedMultiplier = 1.0f;
 	NoclipHeightMultiplier = 1.0f;
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(0, 0, 64.f)); // Position the camera
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(0, 0, 64.f));
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 	
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);				// Set so only owner can see mesh
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);	// Attach mesh to FirstPersonCameraComponent
-	Mesh1P->bCastDynamicShadow = false;			// Disallow mesh to cast dynamic shadows
-	Mesh1P->CastShadow = false;				// Disallow mesh to cast other shadows
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
 
 	// Create a gun mesh component
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
-	FP_Gun->SetOnlyOwnerSee(true);			// Only the owning player will see this mesh
-	FP_Gun->bCastDynamicShadow = false;		// Disallow mesh to cast dynamic shadows
-	FP_Gun->CastShadow = false;			// Disallow mesh to cast other shadows
+	FP_Gun->SetOnlyOwnerSee(true);
+	FP_Gun->bCastDynamicShadow = false;	
+	FP_Gun->CastShadow = false;
 	FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
 
-	// Default offset from the character location for projectiles to spawn
-	GunOffset = FVector(100.0f, 30.0f, 10.0f);
+	SetRotationEnabled( true );
+	SetMovementEnabled( true );
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+void AFP_FirstPersonCharacter::SetRotationEnabled( bool Enabled )
+{
+	Flags.set( RotationEnabled, Enabled );
+}
+
+void AFP_FirstPersonCharacter::SetMovementEnabled( bool Enabled )
+{
+	Flags.set( MovementEnabled, Enabled );
+}
+
+void AFP_FirstPersonCharacter::SetToolSwapEnabled( bool Enabled )
+{
+	Flags.set( ToolSwapEnabled, Enabled );
+}
+
+void AFP_FirstPersonCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	PlayerController = Cast< APlayerController >( GetController() );
+	check( PlayerController );
+
+	for( int32 i = 0; i < GetCapsuleComponent()->GetNumChildrenComponents(); ++i )
+	{
+		if( auto* Tool = Cast< UBasePlayerTool >( GetCapsuleComponent()->GetChildComponent( i ) ) )
+		{
+			Tool->SetPlayerRef( *this );
+			Tools.Add( Tool );
+		}
+	}
+	 
+	CurrentTool = *Tools.begin();
+	CurrentToolIndex = 0;
+}
 
 void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent* PlayerInputComponent )
 {
 	check( PlayerInputComponent );
 
-
 	DECLARE_DELEGATE_OneParam( FPressedParamDelegate, bool );
-	PlayerInputComponent->BindAction< FPressedParamDelegate>( "Mouse1", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouse1, true );
-	PlayerInputComponent->BindAction< FPressedParamDelegate>( "Mouse1", IE_Released, this, &AFP_FirstPersonCharacter::OnMouse1, false );
-	PlayerInputComponent->BindAction( "Mouse2", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouse2 );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Mouse1", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouse1, true );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Mouse1", IE_Released, this, &AFP_FirstPersonCharacter::OnMouse1, false );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Mouse2", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouse2, true );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Mouse2", IE_Released, this, &AFP_FirstPersonCharacter::OnMouse2, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "MouseWheelDown", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouseWheel, true );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "MouseWheelUp", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouseWheel, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTarget", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRotateTarget, true );
@@ -82,102 +104,32 @@ void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent*
 	PlayerInputComponent->BindAxis( "Turn", this, &AFP_FirstPersonCharacter::Turn );
 	PlayerInputComponent->BindAxis( "LookUp", this, &AFP_FirstPersonCharacter::LookUp );
 	PlayerInputComponent->BindAxis( "Jump", this, &AFP_FirstPersonCharacter::OnJumped );
+
+	DECLARE_DELEGATE_OneParam( FToolParamDelegate, int32 );
+	for( int32 i = 0; i < 10; ++i )
+		PlayerInputComponent->BindAction< FToolParamDelegate >( *FString::Format( TEXT( "Tool{0}" ), { i + 1 } ), IE_Released, this, &AFP_FirstPersonCharacter::OnToolChange, i );
 }
 
 void AFP_FirstPersonCharacter::OnMouse1( bool pressed )
 {
-	if( !pressed && TargetActor )
-	{
-		ReflexOutput( FString( TEXT( "Mouse1 Released" ) ) );
-		Cast< UPrimitiveComponent >( TargetActor->GetRootComponent() )->SetSimulatePhysics( true );
-		TargetActor = nullptr;
-	}
-	else if( pressed && !TargetActor )
-	{
-		// Play a sound if there is one
-		if( FireSound != nullptr )
-		{
-			UGameplayStatics::PlaySoundAtLocation( this, FireSound, GetActorLocation() );
-		}
-
-		// Try and play a firing animation if specified
-		if( FireAnimation != nullptr )
-		{
-			// Get the animation object for the arms mesh
-			UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-			if( AnimInstance != nullptr )
-			{
-				AnimInstance->Montage_Play( FireAnimation, 1.f );
-			}
-		}
-
-		FVector ShootDir = FVector::ZeroVector;
-		FVector StartTrace = FVector::ZeroVector;
-
-		if( PlayerController )
-		{
-			// Calculate the direction of fire and the start location for trace
-			FRotator CamRot;
-			PlayerController->GetPlayerViewPoint( StartTrace, CamRot );
-			ShootDir = CamRot.Vector();
-
-			// Adjust trace so there is nothing blocking the ray between the camera and the pawn, and calculate distance from adjusted start
-			StartTrace = StartTrace + ShootDir * ( ( GetActorLocation() - StartTrace ) | ShootDir );
-		}
-
-		// Calculate endpoint of trace
-		const FVector EndTrace = StartTrace + ShootDir * TraceDistance;
-		const FHitResult Impact = WeaponTrace( StartTrace, EndTrace );
-		AActor* DamagedActor = Impact.GetActor();
-		UPrimitiveComponent* DamagedComponent = Impact.GetComponent();
-
-		// If we hit an actor, with a component that is simulating physics, apply an impulse
-		if( DamagedActor && DamagedActor && DamagedComponent && DamagedActor->IsRootComponentMovable() )
-		{
-			ReflexOutput( ReflexFormat( "Mouse1 Pressed, target: {0}", DamagedActor->GetName() ) );
-
-			TargetActor = DamagedActor;
-			DamagedComponent->SetSimulatePhysics( false );
-			TargetLocationOffset = FVector::ZeroVector;
-			TargetDistance = ( TargetActor->GetTransform().GetLocation() - GetTransform().GetLocation() ).Size();
-			TargetLocationOffset = PlayerController->GetControlRotation().UnrotateVector( TargetActor->GetActorLocation() - GetTargetLockLocation() );
-			targetRotationOffset = TargetActor->GetActorRotation() - GetActorRotation();
-		}
-	}
+	CurrentTool->OnMouse1( pressed );
 }
 
-FHitResult AFP_FirstPersonCharacter::WeaponTrace( const FVector& StartTrace, const FVector& EndTrace ) const
+void AFP_FirstPersonCharacter::OnMouse2( bool Pressed )
 {
-	// Perform trace to retrieve hit info
-	FCollisionQueryParams TraceParams( SCENE_QUERY_STAT( WeaponTrace ), true, GetInstigator() );
-	TraceParams.bReturnPhysicalMaterial = true;
-
-	FHitResult Hit( ForceInit );
-	GetWorld()->LineTraceSingleByChannel( Hit, StartTrace, EndTrace, COLLISION_WEAPON, TraceParams );
-
-	return Hit;
+	CurrentTool->OnMouse2( Pressed );
 }
 
-void AFP_FirstPersonCharacter::OnMouse2()
+void AFP_FirstPersonCharacter::OnRotateTarget( bool Pressed )
 {
-	if( TargetActor )
-		ReflexOutput( FString( TEXT( "Mouse2 Pressed - Freeze target" ) ) );
-
-	TargetActor = nullptr;
+	CurrentTool->OnRotateTarget( Pressed );
 }
 
-void AFP_FirstPersonCharacter::OnRotateTarget( bool pressed )
+void AFP_FirstPersonCharacter::OnSprint( bool Pressed )
 {
-	Flags[RotatingTarget] = pressed;
-	
-	ReflexOutput( FString( Flags[RotatingTarget] ? TEXT( "Rotate target Enabled" ) : TEXT( "Rotate target Disabled" ) ) );
-}
-
-void AFP_FirstPersonCharacter::OnSprint( bool pressed )
-{
-	Flags[Sprint] = pressed;
-	GetCharacterMovement()->MaxWalkSpeed *= ( pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
-	GetCharacterMovement()->MaxFlySpeed *= ( pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
+	Flags[Sprint] = Pressed;
+	GetCharacterMovement()->MaxWalkSpeed *= ( Pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
+	GetCharacterMovement()->MaxFlySpeed *= ( Pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
 
 	ReflexOutput( FString( Flags[Sprint] ? TEXT( "Shift Enabled" ) : TEXT( "Shift Disabled" ) ) );
 }
@@ -192,26 +144,42 @@ void AFP_FirstPersonCharacter::OnNoclip()
 	ReflexOutput( FString( GetCharacterMovement()->IsFlying() ? TEXT( "Noclip Enabled" ) : TEXT( "Noclip Disabled" ) ) );
 }
 
-void AFP_FirstPersonCharacter::OnJumped( bool pressed )
+void AFP_FirstPersonCharacter::OnJumped( bool Pressed )
 {
-	if( !GetCharacterMovement()->IsFlying() )
-		pressed ? Jump() : StopJumping();
+	if( !GetCharacterMovement()->IsFlying() && Flags.test( MovementEnabled ) )
+		Pressed ? Jump() : StopJumping();
 }
 
 void AFP_FirstPersonCharacter::OnJumped( float Rate )
 {
-	if( GetCharacterMovement()->IsFlying() )
+	if( GetCharacterMovement()->IsFlying() && Flags.test( MovementEnabled ) )
 		AddMovementInput( GetActorUpVector(), Rate * NoclipHeightMultiplier );
 }
 
-void AFP_FirstPersonCharacter::OnMouseWheel( bool wheel_down )
+void AFP_FirstPersonCharacter::OnMouseWheel( bool WheelDown )
 {
-	TargetDistance = FMath::Max( 0.0f, TargetDistance + GetWorld()->GetDeltaSeconds() * ZoomSpeed * ( wheel_down ? -1.0f : 1.0f ) );
+	CurrentTool->OnMouseWheel( WheelDown );
+
+	if( Flags.test( ToolSwapEnabled ) )
+		OnToolChange( ( CurrentToolIndex + ( WheelDown ? -1 : 1 ) ) % Tools.Num() );
+}
+
+void AFP_FirstPersonCharacter::OnToolChange( int32 ToolIndex )
+{
+	if( ToolIndex >= Tools.Num() || ToolIndex == CurrentToolIndex )
+		return;
+
+	const auto Prev = CurrentToolIndex;
+	CurrentToolIndex = ToolIndex;
+	CurrentTool->SetEnabled( false );
+	CurrentTool = Tools[CurrentToolIndex];
+	CurrentTool->SetEnabled( true );
+	UIToolIndexSelected( Prev, CurrentToolIndex );
 }
 
 void AFP_FirstPersonCharacter::MoveForward(float Value)
 {
-	if( Value != 0.0f )
+	if( Value != 0.0f && Flags.test( MovementEnabled ) )
 	{
 		const auto direction = GetCharacterMovement()->IsFlying() ? FRotationMatrix( PlayerController->GetControlRotation() ).GetUnitAxis( EAxis::X ) : GetActorForwardVector();
 		AddMovementInput( direction, Value * ( Flags.test( Sprint ) ? SprintSpeedMultiplier : 1.0f ) );
@@ -220,7 +188,7 @@ void AFP_FirstPersonCharacter::MoveForward(float Value)
 
 void AFP_FirstPersonCharacter::MoveRight(float Value)
 {
-	if( Value != 0.0f )
+	if( Value != 0.0f && Flags.test( MovementEnabled ) )
 	{
 		const auto direction = GetCharacterMovement()->IsFlying() ? FRotationMatrix( PlayerController->GetControlRotation() ).GetUnitAxis( EAxis::Y ) : GetActorRightVector();
 		AddMovementInput( direction, Value * ( Flags.test( Sprint ) ? SprintSpeedMultiplier : 1.0f ) );
@@ -229,15 +197,9 @@ void AFP_FirstPersonCharacter::MoveRight(float Value)
 
 void AFP_FirstPersonCharacter::Turn( float Rate )
 {
-	if( Flags.test( RotatingTarget ) && TargetActor )
-	{
-		const auto rotation = ( TargetActor->GetActorLocation() - GetActorLocation() ).Rotation();
-		FVector x, y, z;
-		UKismetMathLibrary::GetAxes( rotation, x, y, z );
-		const auto target_rotation = FQuat( z, Rate * ObjectRotateSpeedYaw ) * ( GetActorRotation() + targetRotationOffset ).Quaternion();
-		targetRotationOffset = target_rotation.Rotator() - GetActorRotation();
-	}
-	else
+	CurrentTool->Turn( Rate );
+
+	if( Flags.test( RotationEnabled ) )
 	{
 		AddControllerYawInput( Rate );
 	}
@@ -245,42 +207,10 @@ void AFP_FirstPersonCharacter::Turn( float Rate )
 
 void AFP_FirstPersonCharacter::LookUp( float Rate )
 {
-	if( Flags.test( RotatingTarget ) && TargetActor )
-	{
-		const auto rotation = ( TargetActor->GetActorLocation() - GetActorLocation() ).Rotation();
-		FVector x, y, z;
-		UKismetMathLibrary::GetAxes( rotation, x, y, z );
-		const auto target_rotation = FQuat( y, Rate * ObjectRotateSpeedPitch ) * ( GetActorRotation() + targetRotationOffset ).Quaternion();
-		targetRotationOffset = target_rotation.Rotator() - GetActorRotation();
-	}
-	else
+	CurrentTool->LookUp( Rate );
+
+	if( Flags.test( RotationEnabled ) )
 	{
 		AddControllerPitchInput( Rate );
-	}
-}
-
-FVector AFP_FirstPersonCharacter::GetTargetLockLocation() const
-{
-	const auto direction = FRotationMatrix( PlayerController->GetControlRotation() ).GetUnitAxis( EAxis::X );
-	const auto target_loc = GetTransform().GetLocation() + direction * TargetDistance + PlayerController->GetControlRotation().RotateVector( TargetLocationOffset );
-	return target_loc;
-}
-
-void AFP_FirstPersonCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	PlayerController = Cast< APlayerController >( GetController() );
-	check( PlayerController );
-}
-
-void AFP_FirstPersonCharacter::Tick( float DeltaTime )
-{
-	Super::Tick( DeltaTime );
-
-	if( TargetActor )
-	{
-		TargetActor->SetActorLocation( GetTargetLockLocation(), true );
-		TargetActor->SetActorRotation( GetActorRotation() + targetRotationOffset );
 	}
 }

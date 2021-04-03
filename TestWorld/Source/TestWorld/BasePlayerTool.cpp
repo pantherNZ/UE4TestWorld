@@ -1,34 +1,36 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "BasePlayerTool.h"
 
-// Sets default values for this component's properties
+#define COLLISION_WEAPON		ECC_GameTraceChannel1
+
 UBasePlayerTool::UBasePlayerTool()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UBasePlayerTool::SetPlayerRef( AFP_FirstPersonCharacter& _Player )
+{
+	this->Player = &_Player;
+}
 
-// Called when the game starts
+void UBasePlayerTool::SetEnabled( bool _IsEnabled )
+{
+	this->IsEnabled = _IsEnabled;
+}
+
 void UBasePlayerTool::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
 }
 
-
-// Called every frame
-void UBasePlayerTool::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+FHitResult UBasePlayerTool::WeaponTrace( const FVector& StartTrace, const FVector& EndTrace ) const
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	// Perform trace to retrieve hit info
+	FCollisionQueryParams TraceParams( SCENE_QUERY_STAT( WeaponTrace ), true, Player->GetInstigator() );
+	TraceParams.bReturnPhysicalMaterial = true;
 
-	// ...
+	FHitResult Hit( ForceInit );
+	GetWorld()->LineTraceSingleByChannel( Hit, StartTrace, EndTrace, COLLISION_WEAPON, TraceParams );
+
+	return Hit;
 }
-
