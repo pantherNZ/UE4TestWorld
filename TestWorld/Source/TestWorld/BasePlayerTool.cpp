@@ -23,8 +23,22 @@ void UBasePlayerTool::BeginPlay()
 
 }
 
-FHitResult UBasePlayerTool::WeaponTrace( const FVector& StartTrace, const FVector& EndTrace ) const
+FHitResult UBasePlayerTool::WeaponTrace( float TraceDistance ) const
 {
+	FVector ShootDir = FVector::ZeroVector;
+	FVector StartTrace = FVector::ZeroVector;
+
+	// Calculate the direction of fire and the start location for trace
+	FRotator CamRot;
+	Player->GetPlayerController()->GetPlayerViewPoint( StartTrace, CamRot );
+	ShootDir = CamRot.Vector();
+
+	// Adjust trace so there is nothing blocking the ray between the camera and the pawn, and calculate distance from adjusted start
+	StartTrace = StartTrace + ShootDir * ( ( Player->GetActorLocation() - StartTrace ) | ShootDir );
+
+	// Calculate endpoint of trace
+	const FVector EndTrace = StartTrace + ShootDir * TraceDistance;
+
 	// Perform trace to retrieve hit info
 	FCollisionQueryParams TraceParams( SCENE_QUERY_STAT( WeaponTrace ), true, Player->GetInstigator() );
 	TraceParams.bReturnPhysicalMaterial = true;

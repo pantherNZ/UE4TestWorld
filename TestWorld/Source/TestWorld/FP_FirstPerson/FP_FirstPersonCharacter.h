@@ -41,6 +41,7 @@ protected:
 	void OnMouse2( bool Pressed );
 	void OnMouseWheel( bool WheelDown );
 	void OnRotateTarget( bool Pressed );
+	void OnRotateTargetAxis( bool Pressed );
 	void OnSprint( bool Pressed );
 	void OnNoclip();
 	void OnJumped( bool Pressed );
@@ -49,7 +50,7 @@ protected:
 	void MoveRight(float Val);
 	void Turn(float Rate);
 	void LookUp(float Rate);
-	void OnToolChange( int32 ToolIndex );
+	void OnToolChange( int32 ToolIndex, bool Force = false );
 
 	UFUNCTION( BlueprintImplementableEvent )
 	void UIToolIndexSelected( int32 PreviousIndex, int32 NewIndex );

@@ -26,12 +26,13 @@ public:
 	virtual void OnMouse2( bool Pressed ) { }
 	virtual void OnMouseWheel( bool WheelDown ) { }
 	virtual void OnRotateTarget( bool Pressed ) { }
+	virtual void OnRotateTargetAxis( bool Pressed ) { }
 	virtual void Turn( float Rate ) { }
 	virtual void LookUp( float Rate ) { }
 
 protected:
 	virtual void BeginPlay() override;
-	FHitResult WeaponTrace( const FVector& StartTrace, const FVector& EndTrace ) const;
+	FHitResult WeaponTrace( float TraceDistance = 1000.0f ) const;
 
 public:	
 

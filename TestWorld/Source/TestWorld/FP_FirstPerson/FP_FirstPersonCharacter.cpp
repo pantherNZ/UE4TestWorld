@@ -67,7 +67,7 @@ void AFP_FirstPersonCharacter::BeginPlay()
 	PlayerController = Cast< APlayerController >( GetController() );
 	check( PlayerController );
 
-	for( int32 i = 0; i < GetCapsuleComponent()->GetNumChildrenComponents(); ++i )
+	for( int32 i = GetCapsuleComponent()->GetNumChildrenComponents() - 1; i >= 0; --i )
 	{
 		if( auto* Tool = Cast< UBasePlayerTool >( GetCapsuleComponent()->GetChildComponent( i ) ) )
 		{
@@ -75,9 +75,11 @@ void AFP_FirstPersonCharacter::BeginPlay()
 			Tools.Add( Tool );
 		}
 	}
-	 
-	CurrentTool = *Tools.begin();
-	CurrentToolIndex = 0;
+	
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer( TimerHandle, [this]() { OnToolChange( 0, true ); }, 0.01f, false );
+
+	CurrentTool = Tools[0];
 }
 
 void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent* PlayerInputComponent )
@@ -93,7 +95,10 @@ void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent*
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "MouseWheelUp", IE_Pressed, this, &AFP_FirstPersonCharacter::OnMouseWheel, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTarget", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRotateTarget, true );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTarget", IE_Released, this, &AFP_FirstPersonCharacter::OnRotateTarget, false );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTargetAxis", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRotateTargetAxis, true );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTargetAxis", IE_Released, this, &AFP_FirstPersonCharacter::OnRotateTargetAxis, true );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Pressed, this, &AFP_FirstPersonCharacter::OnSprint, true );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Released, this, &AFP_FirstPersonCharacter::OnSprint, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Released, this, &AFP_FirstPersonCharacter::OnSprint, false );
 	PlayerInputComponent->BindAction( "Noclip", IE_Pressed, this, &AFP_FirstPersonCharacter::OnNoclip );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Jump", IE_Pressed, this, &AFP_FirstPersonCharacter::OnJumped, true );
@@ -105,9 +110,9 @@ void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent*
 	PlayerInputComponent->BindAxis( "LookUp", this, &AFP_FirstPersonCharacter::LookUp );
 	PlayerInputComponent->BindAxis( "Jump", this, &AFP_FirstPersonCharacter::OnJumped );
 
-	DECLARE_DELEGATE_OneParam( FToolParamDelegate, int32 );
+	DECLARE_DELEGATE_TwoParams( FToolParamDelegate, int32, bool );
 	for( int32 i = 0; i < 10; ++i )
-		PlayerInputComponent->BindAction< FToolParamDelegate >( *FString::Format( TEXT( "Tool{0}" ), { i + 1 } ), IE_Released, this, &AFP_FirstPersonCharacter::OnToolChange, i );
+		PlayerInputComponent->BindAction< FToolParamDelegate >( *FString::Format( TEXT( "Tool{0}" ), { i + 1 } ), IE_Pressed, this, &AFP_FirstPersonCharacter::OnToolChange, i, false );
 }
 
 void AFP_FirstPersonCharacter::OnMouse1( bool pressed )
@@ -123,6 +128,11 @@ void AFP_FirstPersonCharacter::OnMouse2( bool Pressed )
 void AFP_FirstPersonCharacter::OnRotateTarget( bool Pressed )
 {
 	CurrentTool->OnRotateTarget( Pressed );
+}
+
+void AFP_FirstPersonCharacter::OnRotateTargetAxis( bool Pressed )
+{
+	CurrentTool->OnRotateTargetAxis( Pressed );
 }
 
 void AFP_FirstPersonCharacter::OnSprint( bool Pressed )
@@ -164,14 +174,15 @@ void AFP_FirstPersonCharacter::OnMouseWheel( bool WheelDown )
 		OnToolChange( ( CurrentToolIndex + ( WheelDown ? -1 : 1 ) ) % Tools.Num() );
 }
 
-void AFP_FirstPersonCharacter::OnToolChange( int32 ToolIndex )
+void AFP_FirstPersonCharacter::OnToolChange( int32 ToolIndex, bool Force )
 {
-	if( ToolIndex >= Tools.Num() || ToolIndex == CurrentToolIndex )
+	if( ToolIndex >= Tools.Num() || ( ToolIndex == CurrentToolIndex && !Force ) )
 		return;
 
 	const auto Prev = CurrentToolIndex;
 	CurrentToolIndex = ToolIndex;
-	CurrentTool->SetEnabled( false );
+	if( CurrentTool )
+		CurrentTool->SetEnabled( false );
 	CurrentTool = Tools[CurrentToolIndex];
 	CurrentTool->SetEnabled( true );
 	UIToolIndexSelected( Prev, CurrentToolIndex );
