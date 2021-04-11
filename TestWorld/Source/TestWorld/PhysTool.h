@@ -27,7 +27,7 @@ protected:
 	void ReleaseTarget();
 	void TickComponent( float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) override;
 	FVector GetTargetLockLocation() const;
-	void SetTargetRotationOffset( FRotator& target_rotation );
+	FRotator GetTargetLockRotation();
 
 public:
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
@@ -36,6 +36,8 @@ public:
 	float ObjectRotateSpeedYaw;
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
 	float ObjectRotateSpeedPitch;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = Gameplay )
+	float RotationLockAngle;
 
 private:
 	bool RotatingTarget;

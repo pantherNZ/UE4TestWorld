@@ -51,6 +51,8 @@ protected:
 	void Turn(float Rate);
 	void LookUp(float Rate);
 	void OnToolChange( int32 ToolIndex, bool Force = false );
+	void OnUndo();
+	void OnRedo();
 
 	UFUNCTION( BlueprintImplementableEvent )
 	void UIToolIndexSelected( int32 PreviousIndex, int32 NewIndex );

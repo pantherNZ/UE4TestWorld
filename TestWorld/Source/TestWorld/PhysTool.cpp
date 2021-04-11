@@ -8,6 +8,7 @@ UPhysTool::UPhysTool()
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
 
+	RotationLockAngle = 22.5f;
 	ZoomSpeed = 1.0f;
 	ObjectRotateSpeedYaw = 0.1f;
 	ObjectRotateSpeedPitch = 0.1f;
@@ -70,8 +71,8 @@ void UPhysTool::OnRotateTarget( bool Pressed )
 
 void UPhysTool::OnRotateTargetAxis( bool Pressed )
 {
-	RotateAxisAligned = RotatingTarget = Pressed;
-	ReflexOutput( FString( RotatingTarget ? TEXT( "Rotate target axis aligned Enabled" ) : TEXT( "Rotate target axis aligned Disabled" ) ) );
+	RotateAxisAligned = Pressed;
+	ReflexOutput( FString( RotateAxisAligned ? TEXT( "Rotate target axis aligned Enabled" ) : TEXT( "Rotate target axis aligned Disabled" ) ) );
 }
 
 void UPhysTool::OnMouseWheel( bool wheel_down )
@@ -87,7 +88,7 @@ void UPhysTool::Turn( float Rate )
 		FVector x, y, z;
 		UKismetMathLibrary::GetAxes( rotation, x, y, z );
 		const auto target_rotation = FQuat( z, Rate * ObjectRotateSpeedYaw ) * ( Player->GetActorRotation() + targetRotationOffset ).Quaternion();
-		SetTargetRotationOffset( target_rotation.Rotator() );
+		targetRotationOffset = target_rotation.Rotator() - Player->GetActorRotation();
 	}
 }
 
@@ -99,7 +100,7 @@ void UPhysTool::LookUp( float Rate )
 		FVector x, y, z;
 		UKismetMathLibrary::GetAxes( rotation, x, y, z );
 		const auto target_rotation = FQuat( y, -Rate * ObjectRotateSpeedPitch ) * ( Player->GetActorRotation() + targetRotationOffset ).Quaternion();
-		SetTargetRotationOffset( target_rotation.Rotator() );
+		targetRotationOffset = target_rotation.Rotator() - Player->GetActorRotation();
 	}
 }
 
@@ -110,7 +111,7 @@ void UPhysTool::TickComponent( float DeltaTime, enum ELevelTick TickType, FActor
 	if( TargetActor )
 	{
 		TargetActor->SetActorLocation( GetTargetLockLocation(), true );
-		TargetActor->SetActorRotation( Player->GetActorRotation() + targetRotationOffset );
+		TargetActor->SetActorRotation( GetTargetLockRotation() );
 	}
 
 	Player->SetRotationEnabled( !( RotatingTarget && TargetActor ) );
@@ -123,19 +124,20 @@ FVector UPhysTool::GetTargetLockLocation() const
 	return target_loc;
 }
 
-void UPhysTool::SetTargetRotationOffset( FRotator& target_rotation )
+FRotator UPhysTool::GetTargetLockRotation()
 {
-	targetRotationOffset = target_rotation - Player->GetActorRotation();
+	auto rotation_offset = targetRotationOffset;
 
 	if( RotateAxisAligned )
 	{
-		auto euler = targetRotationOffset.Euler();
-		const auto LockValue = FMath::DegreesToRadians( 45.0f );
-		euler.X = int( euler.X / LockValue + 0.5f ) * LockValue;
-		euler.Y = int( euler.Y / LockValue + 0.5f ) * LockValue;
-		euler.Z = int( euler.Z / LockValue + 0.5f ) * LockValue;
-		targetRotationOffset = FRotator::MakeFromEuler( euler );
+		auto euler = rotation_offset.Euler();
+		euler.X = int( ( euler.X + 360 ) / RotationLockAngle + 0.5f ) * RotationLockAngle;
+		euler.Y = int( ( euler.Y + 360 ) / RotationLockAngle + 0.5f ) * RotationLockAngle;
+		euler.Z = int( ( euler.Z + 360 ) / RotationLockAngle + 0.5f ) * RotationLockAngle;
+		rotation_offset = FRotator::MakeFromEuler( euler );
 	}
+
+	return Player->GetActorRotation() + rotation_offset;
 }
 
 void UPhysTool::ReleaseTarget()

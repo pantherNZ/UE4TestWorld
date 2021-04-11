@@ -11,6 +11,7 @@
 #include "..//Utility.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../PhysTool.h"
+#include "../UndoRedoSystem.h"
 
 AFP_FirstPersonCharacter::AFP_FirstPersonCharacter()
 {
@@ -96,13 +97,14 @@ void AFP_FirstPersonCharacter::SetupPlayerInputComponent( class UInputComponent*
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTarget", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRotateTarget, true );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTarget", IE_Released, this, &AFP_FirstPersonCharacter::OnRotateTarget, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTargetAxis", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRotateTargetAxis, true );
-	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTargetAxis", IE_Released, this, &AFP_FirstPersonCharacter::OnRotateTargetAxis, true );
+	PlayerInputComponent->BindAction< FPressedParamDelegate >( "RotateTargetAxis", IE_Released, this, &AFP_FirstPersonCharacter::OnRotateTargetAxis, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Pressed, this, &AFP_FirstPersonCharacter::OnSprint, true );
-	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Released, this, &AFP_FirstPersonCharacter::OnSprint, false );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Sprint", IE_Released, this, &AFP_FirstPersonCharacter::OnSprint, false );
 	PlayerInputComponent->BindAction( "Noclip", IE_Pressed, this, &AFP_FirstPersonCharacter::OnNoclip );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Jump", IE_Pressed, this, &AFP_FirstPersonCharacter::OnJumped, true );
 	PlayerInputComponent->BindAction< FPressedParamDelegate >( "Jump", IE_Released, this, &AFP_FirstPersonCharacter::OnJumped, false );
+	PlayerInputComponent->BindAction( "Undo", IE_Pressed, this, &AFP_FirstPersonCharacter::OnUndo );
+	PlayerInputComponent->BindAction( "Redo", IE_Pressed, this, &AFP_FirstPersonCharacter::OnRedo );
 
 	PlayerInputComponent->BindAxis( "MoveForward", this, &AFP_FirstPersonCharacter::MoveForward );
 	PlayerInputComponent->BindAxis( "MoveRight", this, &AFP_FirstPersonCharacter::MoveRight );
@@ -224,4 +226,14 @@ void AFP_FirstPersonCharacter::LookUp( float Rate )
 	{
 		AddControllerPitchInput( Rate );
 	}
+}
+
+void AFP_FirstPersonCharacter::OnUndo()
+{
+	UndoRedoSystem::GetInstance().UndoAction();
+}
+
+void AFP_FirstPersonCharacter::OnRedo()
+{
+	UndoRedoSystem::GetInstance().RedoAction();
 }
