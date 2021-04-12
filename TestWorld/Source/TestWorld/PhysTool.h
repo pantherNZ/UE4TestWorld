@@ -15,14 +15,14 @@ public:
 protected:
 	FString GetName() const override { return TEXT( "Phys Tool" ); }
 
-	void OnMouse1( bool Pressed ) override;
-	void OnMouse2( bool Pressed ) override;
-	void OnMouseWheel( bool WheelDown ) override;
-	void OnRotateTarget( bool Pressed ) override;
-	void OnRotateTargetAxis( bool Pressed ) override;
-	void Turn( float Rate ) override;
-	void LookUp( float Rate ) override;
-	void OnEnabledChanged( bool Enabled ) override;
+	void OnMouse1_Implementation( bool Pressed ) override;
+	void OnMouse2_Implementation( bool Pressed ) override;
+	void OnMouseWheel_Implementation( bool WheelDown ) override;
+	void OnRotateTarget_Implementation( bool Pressed ) override;
+	void OnRotateTargetAxis_Implementation( bool Pressed ) override;
+	void Turn_Implementation( float Rate ) override;
+	void LookUp_Implementation( float Rate ) override;
+	void OnEnabledChanged_Implementation( bool Enabled ) override;
 
 	void ReleaseTarget();
 	void TickComponent( float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) override;

@@ -7,7 +7,7 @@
 
 class AFP_FirstPersonCharacter;
 
-UCLASS( ClassGroup = ( Custom ), meta = ( BlueprintSpawnableComponent ) )
+UCLASS( BlueprintType, Blueprintable )
 class TESTWORLD_API UBasePlayerTool : public UPrimitiveComponent
 {
 	GENERATED_BODY()
@@ -21,17 +21,27 @@ public:
 	UFUNCTION( BlueprintCallable )
 	virtual FString GetName() const PURE_VIRTUAL( UBasePlayerTool::GetName, return {}; );
 
-	virtual void OnEnabledChanged( bool Enabled ) { }
-	virtual void OnMouse1( bool Pressed ) { }
-	virtual void OnMouse2( bool Pressed ) { }
-	virtual void OnMouseWheel( bool WheelDown ) { }
-	virtual void OnRotateTarget( bool Pressed ) { }
-	virtual void OnRotateTargetAxis( bool Pressed ) { }
-	virtual void Turn( float Rate ) { }
-	virtual void LookUp( float Rate ) { }
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnEnabledChanged( bool Enabled );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnMouse1( bool Pressed );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnMouse2( bool Pressed );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnMouseWheel( bool WheelDown );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnRotateTarget( bool Pressed );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void OnRotateTargetAxis( bool Pressed );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void Turn( float Rate );
+	UFUNCTION( BlueprintNativeEvent, Category = "Tool" )
+	void LookUp( float Rate );
 
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION( BlueprintCallable )
 	FHitResult WeaponTrace( float TraceDistance = 1000.0f ) const;
 
 public:	

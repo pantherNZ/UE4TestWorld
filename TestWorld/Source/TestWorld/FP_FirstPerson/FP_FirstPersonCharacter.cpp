@@ -230,10 +230,16 @@ void AFP_FirstPersonCharacter::LookUp( float Rate )
 
 void AFP_FirstPersonCharacter::OnUndo()
 {
-	UndoRedoSystem::GetInstance().UndoAction();
+	if( UndoRedoSystem::GetInstance().UndoAction() )
+		ReflexOutput( FString( TEXT( "Undo" ) ) );
+	else
+		ReflexOutput( FString( TEXT( "Undo failed" ) ) );
 }
 
 void AFP_FirstPersonCharacter::OnRedo()
 {
-	UndoRedoSystem::GetInstance().RedoAction();
+	if( UndoRedoSystem::GetInstance().RedoAction() )
+		ReflexOutput( FString( TEXT( "Redo" ) ) );
+	else
+		ReflexOutput( FString( TEXT( "Redo failed" ) ) );
 }

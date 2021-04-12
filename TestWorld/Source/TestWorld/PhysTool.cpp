@@ -14,7 +14,7 @@ UPhysTool::UPhysTool()
 	ObjectRotateSpeedPitch = 0.1f;
 }
 
-void UPhysTool::OnMouse1( bool pressed )
+void UPhysTool::OnMouse1_Implementation( bool pressed )
 {
 	if( !pressed && TargetActor )
 	{
@@ -55,7 +55,7 @@ void UPhysTool::OnMouse1( bool pressed )
 	}
 }
 
-void UPhysTool::OnMouse2( bool Pressed )
+void UPhysTool::OnMouse2_Implementation( bool Pressed )
 {
 	if( TargetActor )
 		ReflexOutput( FString( TEXT( "Mouse2 Pressed - Freeze target" ) ) );
@@ -63,24 +63,24 @@ void UPhysTool::OnMouse2( bool Pressed )
 	TargetActor = nullptr;
 }
 
-void UPhysTool::OnRotateTarget( bool Pressed )
+void UPhysTool::OnRotateTarget_Implementation( bool Pressed )
 {
 	RotatingTarget = Pressed;
 	ReflexOutput( FString( RotatingTarget ? TEXT( "Rotate target Enabled" ) : TEXT( "Rotate target Disabled" ) ) );
 }
 
-void UPhysTool::OnRotateTargetAxis( bool Pressed )
+void UPhysTool::OnRotateTargetAxis_Implementation( bool Pressed )
 {
 	RotateAxisAligned = Pressed;
 	ReflexOutput( FString( RotateAxisAligned ? TEXT( "Rotate target axis aligned Enabled" ) : TEXT( "Rotate target axis aligned Disabled" ) ) );
 }
 
-void UPhysTool::OnMouseWheel( bool wheel_down )
+void UPhysTool::OnMouseWheel_Implementation( bool wheel_down )
 {
 	TargetDistance = FMath::Max( 0.0f, TargetDistance + GetWorld()->GetDeltaSeconds() * ZoomSpeed * ( wheel_down ? -1.0f : 1.0f ) );
 }
 
-void UPhysTool::Turn( float Rate )
+void UPhysTool::Turn_Implementation( float Rate )
 {
 	if( RotatingTarget && TargetActor )
 	{
@@ -92,7 +92,7 @@ void UPhysTool::Turn( float Rate )
 	}
 }
 
-void UPhysTool::LookUp( float Rate )
+void UPhysTool::LookUp_Implementation( float Rate )
 {
 	if( RotatingTarget && TargetActor )
 	{
@@ -101,6 +101,14 @@ void UPhysTool::LookUp( float Rate )
 		UKismetMathLibrary::GetAxes( rotation, x, y, z );
 		const auto target_rotation = FQuat( y, -Rate * ObjectRotateSpeedPitch ) * ( Player->GetActorRotation() + targetRotationOffset ).Quaternion();
 		targetRotationOffset = target_rotation.Rotator() - Player->GetActorRotation();
+	}
+}
+
+void UPhysTool::OnEnabledChanged_Implementation( bool Enabled )
+{
+	if( !Enabled && TargetActor )
+	{
+		ReleaseTarget();
 	}
 }
 
@@ -145,12 +153,4 @@ void UPhysTool::ReleaseTarget()
 	ReflexOutput( FString( TEXT( "Target Released" ) ) );
 	Cast< UPrimitiveComponent >( TargetActor->GetRootComponent() )->SetSimulatePhysics( true );
 	TargetActor = nullptr;
-}
-
-void UPhysTool::OnEnabledChanged( bool Enabled )
-{
-	if( !Enabled && TargetActor )
-	{
-		ReleaseTarget();
-	}
 }

@@ -5,6 +5,7 @@
 UBasePlayerTool::UBasePlayerTool()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	DisableCollision = true;
 }
 
 void UBasePlayerTool::SetPlayerRef( AFP_FirstPersonCharacter& _Player )
@@ -14,7 +15,11 @@ void UBasePlayerTool::SetPlayerRef( AFP_FirstPersonCharacter& _Player )
 
 void UBasePlayerTool::SetEnabled( bool _IsEnabled )
 {
-	this->IsEnabled = _IsEnabled;
+	if( IsEnabled != _IsEnabled )
+	{
+		IsEnabled = _IsEnabled;
+		OnEnabledChanged( IsEnabled );
+	}
 }
 
 void UBasePlayerTool::BeginPlay()
@@ -22,6 +27,15 @@ void UBasePlayerTool::BeginPlay()
 	Super::BeginPlay();
 
 }
+
+void UBasePlayerTool::OnEnabledChanged_Implementation( bool Enabled ) { }
+void UBasePlayerTool::OnMouse1_Implementation( bool Pressed ) { }
+void UBasePlayerTool::OnMouse2_Implementation( bool Pressed ) { }
+void UBasePlayerTool::OnMouseWheel_Implementation( bool WheelDown ) { }
+void UBasePlayerTool::OnRotateTarget_Implementation( bool Pressed ) { }
+void UBasePlayerTool::OnRotateTargetAxis_Implementation( bool Pressed ) { }
+void UBasePlayerTool::Turn_Implementation( float Rate ) { }
+void UBasePlayerTool::LookUp_Implementation( float Rate ) { }
 
 FHitResult UBasePlayerTool::WeaponTrace( float TraceDistance ) const
 {

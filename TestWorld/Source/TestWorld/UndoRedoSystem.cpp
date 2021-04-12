@@ -1,5 +1,7 @@
 #include "UndoRedoSystem.h"
 
+std::unique_ptr< UndoRedoSystem > UndoRedoSystem::singleton;
+
 UndoRedoSystem::UndoRedoSystem()
 {
 }
@@ -27,24 +29,26 @@ void UndoRedoSystem::ExecuteAction( std::function< void() > action, std::functio
 bool UndoRedoSystem::UndoAction()
 {
 	if( actions.empty() )
-		return;
+		return false;
 
 	if( current_index == 0 )
-		return;
+		return false;
 
 	--current_index;
 	actions[current_index].undo_action();
+	return true;
 }
 
 bool UndoRedoSystem::RedoAction()
 {
 	if( actions.empty() )
-		return;
+		return false;
 
-	if( current_index == actions.size() - 1 )
-		return;
+	if( current_index == actions.size() )
+		return false;
 
 	actions[current_index].do_action();
 	++current_index;
 	actions.resize( current_index );
+	return true;
 }

@@ -3,12 +3,7 @@
 #include "Utility.h"
 #include "UndoRedoSystem.h"
 
- UWeldTool::UWeldTool()
-{
-	 DisableCollision = true;
-}
-
-void UWeldTool::OnMouse1( bool Pressed )
+void UWeldTool::OnMouse1_Implementation( bool Pressed )
 {
 	if( !Pressed )
 		return;
@@ -60,12 +55,12 @@ void UWeldTool::OnMouse1( bool Pressed )
 	}
 }
 
-void UWeldTool::OnMouse2( bool Pressed )
+void UWeldTool::OnMouse2_Implementation( bool Pressed )
 {
 	TargetActor = nullptr;
 }
 
-void UWeldTool::OnEnabledChanged( bool Enabled )
+void UWeldTool::OnEnabledChanged_Implementation( bool Enabled )
 {
 	if( !Enabled )
 		TargetActor = nullptr;

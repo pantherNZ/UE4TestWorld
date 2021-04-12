@@ -10,15 +10,12 @@ class TESTWORLD_API UWeldTool : public UBasePlayerTool
 {
 	GENERATED_BODY()
 
-public:
-	UWeldTool();
-
 protected:
 	FString GetName() const override { return TEXT( "Weld Tool" ); }
 
-	void OnMouse1( bool Pressed ) override;
-	void OnMouse2( bool Pressed ) override;
-	void OnEnabledChanged( bool Enabled ) override;
+	void OnMouse1_Implementation( bool Pressed ) override;
+	void OnMouse2_Implementation( bool Pressed ) override;
+	void OnEnabledChanged_Implementation( bool Enabled ) override;
 
 protected:
 	UPROPERTY()
