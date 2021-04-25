@@ -1,7 +1,7 @@
 #include "WeldTool.h"
 
-#include "Utility.h"
 #include "UndoRedoSystem.h"
+#include "UtilityLibrary.h"
 
 void UWeldTool::OnMouse1_Implementation( bool Pressed )
 {
@@ -31,7 +31,7 @@ void UWeldTool::OnMouse1_Implementation( bool Pressed )
 					weld->SetAngularBreakable( WeldStrengthAngular != 0.0f, WeldStrengthAngular );
 					weld->AttachToComponent( TargetActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform );
 					welds.Add( weld );
-					ReflexOutput( ReflexFormat( "Mouse1 Pressed, creating weld between {0} and {1}", TargetActor->GetName(), Impact.GetActor()->GetName() ) );
+					UUtilityLibrary::CustomLog( ReflexFormat( "Mouse1 Pressed, creating weld between {0} and {1}", TargetActor->GetName(), Impact.GetActor()->GetName() ) );
 				},
 				[this]()
 				{
@@ -50,7 +50,7 @@ void UWeldTool::OnMouse1_Implementation( bool Pressed )
 		{
 			TargetActor = Impact.GetActor();
 
-			ReflexOutput( ReflexFormat( "Mouse1 Pressed, target: {0}", TargetActor->GetName() ) );
+			UUtilityLibrary::CustomLog( ReflexFormat( "Mouse1 Pressed, target: {0}", TargetActor->GetName() ) );
 		}
 	}
 }

@@ -8,13 +8,16 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "..//Utility.h"
+#include "../UtilityLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../PhysTool.h"
 #include "../UndoRedoSystem.h"
+#include "../TestWorldCheatManager.h"
 
 AFP_FirstPersonCharacter::AFP_FirstPersonCharacter()
 {
+	//GetPlayerController()->CheatClass = UTestWorldCheatManager::StaticClass();
+
 	SetActorTickEnabled( true );
 
 	// Set size for collision capsule
@@ -143,7 +146,7 @@ void AFP_FirstPersonCharacter::OnSprint( bool Pressed )
 	GetCharacterMovement()->MaxWalkSpeed *= ( Pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
 	GetCharacterMovement()->MaxFlySpeed *= ( Pressed ? SprintSpeedMultiplier : 1.0f / SprintSpeedMultiplier );
 
-	ReflexOutput( FString( Flags[Sprint] ? TEXT( "Shift Enabled" ) : TEXT( "Shift Disabled" ) ) );
+	UUtilityLibrary::CustomLog( FString( Flags[Sprint] ? TEXT( "Shift Enabled" ) : TEXT( "Shift Disabled" ) ) );
 }
 
 void AFP_FirstPersonCharacter::OnNoclip()
@@ -153,7 +156,7 @@ void AFP_FirstPersonCharacter::OnNoclip()
 	//GetCharacterMovement()->GravityScale = Flags[Noclip] ? 0.0f : 1.0f;
 	GetCharacterMovement()->bCheatFlying = GetCharacterMovement()->IsFlying();
 
-	ReflexOutput( FString( GetCharacterMovement()->IsFlying() ? TEXT( "Noclip Enabled" ) : TEXT( "Noclip Disabled" ) ) );
+	UUtilityLibrary::CustomLog( FString( GetCharacterMovement()->IsFlying() ? TEXT( "Noclip Enabled" ) : TEXT( "Noclip Disabled" ) ) );
 }
 
 void AFP_FirstPersonCharacter::OnJumped( bool Pressed )
@@ -231,15 +234,15 @@ void AFP_FirstPersonCharacter::LookUp( float Rate )
 void AFP_FirstPersonCharacter::OnUndo()
 {
 	if( UndoRedoSystem::GetInstance().UndoAction() )
-		ReflexOutput( FString( TEXT( "Undo" ) ) );
+		UUtilityLibrary::CustomLog( FString( TEXT( "Undo" ) ) );
 	else
-		ReflexOutput( FString( TEXT( "Undo failed" ) ) );
+		UUtilityLibrary::CustomLog( FString( TEXT( "Undo failed" ) ) );
 }
 
 void AFP_FirstPersonCharacter::OnRedo()
 {
 	if( UndoRedoSystem::GetInstance().RedoAction() )
-		ReflexOutput( FString( TEXT( "Redo" ) ) );
+		UUtilityLibrary::CustomLog( FString( TEXT( "Redo" ) ) );
 	else
-		ReflexOutput( FString( TEXT( "Redo failed" ) ) );
+		UUtilityLibrary::CustomLog( FString( TEXT( "Redo failed" ) ) );
 }

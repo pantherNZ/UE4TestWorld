@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BasePlayerTool.h"
+#include "TestWorldSaveGame.h"
 #include "RemovalTool.generated.h"
 
 UCLASS( ClassGroup = ( Custom ), meta = ( BlueprintSpawnableComponent ) )
@@ -17,5 +18,5 @@ protected:
 
 protected:
 	UPROPERTY( EditInstanceOnly )
-	TArray<uint32> RemovedObjectIds;
+	TArray< FActorSaveData > SavedObjectData;
 };

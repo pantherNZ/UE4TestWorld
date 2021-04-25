@@ -5,7 +5,6 @@
 UBasePlayerTool::UBasePlayerTool()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	DisableCollision = true;
 }
 
 void UBasePlayerTool::SetPlayerRef( AFP_FirstPersonCharacter& _Player )

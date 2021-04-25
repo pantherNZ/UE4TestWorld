@@ -1,7 +1,7 @@
 #include "PhysTool.h"
 
 #include "Kismet/KismetMathLibrary.h"
-#include "Utility.h"
+#include "UtilityLibrary.h"
 
 UPhysTool::UPhysTool()
 {
@@ -50,7 +50,7 @@ void UPhysTool::OnMouse1_Implementation( bool pressed )
 			TargetLocationOffset = Player->GetPlayerController()->GetControlRotation().UnrotateVector( TargetActor->GetActorLocation() - GetTargetLockLocation() );
 			targetRotationOffset = TargetActor->GetActorRotation() - Player->GetActorRotation();
 
-			ReflexOutput( ReflexFormat( "Mouse1 Pressed, target: {0}", TargetActor->GetName() ) );
+			UUtilityLibrary::CustomLog( ReflexFormat( "Mouse1 Pressed, target: {0}", TargetActor->GetName() ) );
 		}
 	}
 }
@@ -58,7 +58,7 @@ void UPhysTool::OnMouse1_Implementation( bool pressed )
 void UPhysTool::OnMouse2_Implementation( bool Pressed )
 {
 	if( TargetActor )
-		ReflexOutput( FString( TEXT( "Mouse2 Pressed - Freeze target" ) ) );
+		UUtilityLibrary::CustomLog( FString( TEXT( "Mouse2 Pressed - Freeze target" ) ) );
 
 	TargetActor = nullptr;
 }
@@ -66,13 +66,13 @@ void UPhysTool::OnMouse2_Implementation( bool Pressed )
 void UPhysTool::OnRotateTarget_Implementation( bool Pressed )
 {
 	RotatingTarget = Pressed;
-	ReflexOutput( FString( RotatingTarget ? TEXT( "Rotate target Enabled" ) : TEXT( "Rotate target Disabled" ) ) );
+	UUtilityLibrary::CustomLog( FString( RotatingTarget ? TEXT( "Rotate target Enabled" ) : TEXT( "Rotate target Disabled" ) ) );
 }
 
 void UPhysTool::OnRotateTargetAxis_Implementation( bool Pressed )
 {
 	RotateAxisAligned = Pressed;
-	ReflexOutput( FString( RotateAxisAligned ? TEXT( "Rotate target axis aligned Enabled" ) : TEXT( "Rotate target axis aligned Disabled" ) ) );
+	UUtilityLibrary::CustomLog( FString( RotateAxisAligned ? TEXT( "Rotate target axis aligned Enabled" ) : TEXT( "Rotate target axis aligned Disabled" ) ) );
 }
 
 void UPhysTool::OnMouseWheel_Implementation( bool wheel_down )
@@ -150,7 +150,7 @@ FRotator UPhysTool::GetTargetLockRotation()
 
 void UPhysTool::ReleaseTarget()
 {
-	ReflexOutput( FString( TEXT( "Target Released" ) ) );
+	UUtilityLibrary::CustomLog( FString( TEXT( "Target Released" ) ) );
 	Cast< UPrimitiveComponent >( TargetActor->GetRootComponent() )->SetSimulatePhysics( true );
 	TargetActor = nullptr;
 }

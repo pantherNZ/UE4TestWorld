@@ -1,7 +1,10 @@
 #include "RemovalTool.h"
 
-#include "Utility.h"
+#include "UtilityLibrary.h"
 #include "UndoRedoSystem.h"
+#include "Serialization/ObjectWriter.h"
+#include "Serialization/ObjectReader.h"
+#include "Containers/UnrealString.h"
 
 void URemovalTool::OnMouse1_Implementation( bool Pressed )
 {
@@ -10,21 +13,40 @@ void URemovalTool::OnMouse1_Implementation( bool Pressed )
 
 	const FHitResult Impact = WeaponTrace();
 
+
 	if( Impact.GetActor() && Impact.GetActor()->IsRootComponentMovable() )
 	{
 		UndoRedoSystem::GetInstance().ExecuteAction(
 			[this, Impact]()
 			{
-
-				ReflexOutput( ReflexFormat( "Mouse1 Pressed, creating weld between {0} and {1}", TargetActor->GetName(), Impact.GetActor()->GetName() ) );
+				auto* Actor = Impact.GetActor();
+				FActorSaveData ActorRecord;
+				ActorRecord.ActorName = FName( *Actor->GetName() );
+				ActorRecord.ActorClass = Actor->GetClass()->GetPathName();
+				ActorRecord.ActorTransform = Actor->GetTransform();
+				FObjectWriter archive( Impact.GetActor(), ActorRecord.ActorData );
+				SavedObjectData.Add( ActorRecord );
+				Actor->Destroy();
+				UUtilityLibrary::CustomLog( ReflexFormat( "Mouse1 Pressed, removing object {0}", Actor->GetName() ) );
 			},
 			[this]()
 			{
-				welds.Last()->DestroyComponent();
-				welds.Pop();
-			} );
+				auto ActorRecord = SavedObjectData.Pop();
+				FVector SpawnPos = ActorRecord.ActorTransform.GetLocation();
+				FRotator SpawnRot = ActorRecord.ActorTransform.Rotator();
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.Name = ActorRecord.ActorName;
+				UClass* SpawnClass = FindObject<UClass>( ANY_PACKAGE, *ActorRecord.ActorClass );
+				if( SpawnClass )
+				{
+					GetWorld()->PerformGarbageCollectionAndCleanupActors();
+					AActor* NewActor = GetWorld()->SpawnActor( SpawnClass, &SpawnPos, &SpawnRot, SpawnParams );
+					FObjectReader archive( NewActor, ActorRecord.ActorData );
+				}
 
-		TargetActor = nullptr;
+				UUtilityLibrary::CustomLog( ReflexFormat( "Mouse1 Pressed, recreating object from binary data {0}", SpawnParams.Name.ToString() ) );
+
+			} );
 	}
 }
 
